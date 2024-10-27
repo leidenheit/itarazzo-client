@@ -1,0 +1,152 @@
+arazzo: 1.0.0
+info:
+  title: PetStore - Place an order
+  version: 0.09.1
+  description: >-
+    Illustrates a workflow whereby a client 
+    a) lookup the inventory of the pet store, 
+    b) order a pet in the pet store
+    c) reads the order placed in previous step
+    d) deletes the order from previous step
+    e) tries to read an non-existing order
+sourceDescriptions:
+  - name: petStoreApi
+    url: https://petstore.swagger.io/v2/swagger.json
+    type: openapi
+workflows:
+  - workflowId: fetch-inventory-and-apply-pet-order
+    summary: Fetches the inventory of the pet store.
+    description: >-
+      lorem ipsum description of fetching inventory and placing order
+    inputs:
+      $ref: '#/components/inputs/pets'
+    steps:
+      - stepId: fetch-inventory
+        operationId: $sourceDescriptions.petStoreApi.getInventory
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          availableCount: $response.body.available
+      - stepId: place-pet-order
+        description: Places a pet order.
+        operationId: $sourceDescriptions.petStoreApi.placeOrder
+        requestBody:
+          contentType: application/json
+          payload: |
+            {
+              "id": 4,
+              "petId": "{$inputs.petId}",
+              "shipDate": "2024-10-13T12:02:49.892Z",
+              "status": "placed",
+              "complete": true
+            }
+          replacements:
+            - target: '$.status'
+              value: "manipulatedByDev"
+            - target: '$.id'
+              value: $inputs.petId
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body != null
+          - condition: '#/petId == 4'
+            context: $response.body
+            type: jsonpath
+            version: draft-goessner-dispatch-jsonpath-00
+          - condition: '#/status == manipulatedByDev'
+            context: $response.body
+            type: jsonpath
+            version: draft-goessner-dispatch-jsonpath-00
+        outputs:
+          orderId: $response.body.id
+          orderStatus: $response.body.status
+      - stepId: lookup-placed-order
+        description: Lookup of the previously placed pet order.
+        operationPath: '{$sourceDescriptions.petStoreApi.url}#/paths/~1store~1order~1{orderId}/get'
+        parameters:
+          - reference: $components.parameters.orderId
+            value: '4711' # sad path
+        successCriteria:
+          # assertions to determine step was successful
+          - condition: $statusCode == 200
+          - context: $response.body
+            condition: '#/petId == 4'
+            type: jsonpath
+            version: draft-goessner-dispatch-jsonpath-00
+#        onSuccess:
+#          - name: leaveWorkflow2
+#            type: end
+#            criteria:
+#              # assertions to determine if this action should be executed
+#              - condition: $response.body != null
+#              - condition: '#/petId == 4'
+#                context: $response.body
+#                type: jsonpath
+#                version: draft-goessner-dispatch-jsonpath-00
+        onFailure:
+          - name: retryRetrievePlacedOrderByIdSixTimes
+            type: retry
+            retryAfter: 5 # seconds
+            retryLimit: 6
+            criteria:
+              # assertions to determine if this action should be executed
+              - condition: $statusCode == 404
+      - stepId: delete-placed-order
+        description: Deletion of the previously placed pet order.
+        operationPath: '{$sourceDescriptions.petStoreApi.url}#/paths/~1store~1order~1{orderId}/delete'
+        parameters:
+          - reference: $components.parameters.orderId
+        successCriteria:
+          # assertions to determine step was successful
+          - condition: $statusCode == 200
+          - context: $response.body
+            condition: '#/message == 4'
+            type: jsonpath
+            version: draft-goessner-dispatch-jsonpath-00
+          - context: $response.body
+            condition: '#/code == 200'
+            type: jsonpath
+            version: draft-goessner-dispatch-jsonpath-00
+        onFailure:
+          - name: fetchInventoryAgain
+            type: goto
+            stepId: fetch-inventory
+            criteria:
+              # assertions to determine if this action should be executed
+              - condition: '#/type == unknown'
+                context: $response.body
+                type: jsonpath
+                version: draft-goessner-dispatch-jsonpath-00
+      - stepId: lookup-non-existing-order
+        description: Lookup of a non-existing pet order.
+        operationPath: '{$sourceDescriptions.petStoreApi.url}#/paths/~1store~1order~1{orderId}/get'
+        parameters:
+          - reference: $components.parameters.orderId
+        successCriteria:
+          # assertions to determine step was successful
+          - condition: $statusCode == 404
+        onSuccess:
+          - name: leaveWorkflow
+            type: end
+            criteria:
+              # assertions to determine if this action should be executed
+              - condition: $response.body != null
+              - condition: '#/message == Order not found'
+                context: $response.body
+                type: jsonpath
+                version: draft-goessner-dispatch-jsonpath-00
+    outputs:
+      petsAvailableInStore: $steps.fetch-inventory.outputs.availableCount
+      placedOrderId: $steps.place-pet-order.outputs.orderId
+      placedOrderStatus: $steps.place-pet-order.outputs.orderStatus
+components:
+  inputs:
+    pets:
+      type: object
+      properties:
+        petId:
+          type: number
+  parameters:
+    orderId:
+      name: orderId
+      in: path
+      value: $steps.place-pet-order.outputs.orderId
