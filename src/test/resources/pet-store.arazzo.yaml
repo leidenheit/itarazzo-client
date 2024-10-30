@@ -1,44 +1,74 @@
 arazzo: 1.0.0
 info:
-  title: PetStore - Place an order
-  version: 0.09.1
+  title: PetStore - Example of Workflows
+  version: 4.2.0
   description: >-
-    Illustrates a workflow whereby a client 
-    a) lookup the inventory of the pet store, 
-    b) order a pet in the pet store
-    c) reads the order placed in previous step
-    d) deletes the order from previous step
-    e) tries to read an non-existing order
+    Illustrates workflows whereby a client 
+    1)
+      a) checks that a pet doe not exists; if exists, delete it first 
+      b) add a pet to the pet store
+      c) confirm pet exists
+    2)
+      a) updates the pet from previous step
+      b) uploads an image of the pet
+      c) reads pets of store by status
 sourceDescriptions:
   - name: petStoreApi
-    url: https://petstore.swagger.io/v2/swagger.json
+    url: https://petstore3.swagger.io/api/v3/openapi.json #v3.0.2
+#inside docker with file reference
+#    url: /itarazzo/resources/pet-store.openapi.yaml
     type: openapi
 workflows:
-  - workflowId: fetch-inventory-and-apply-pet-order
-    summary: Fetches the inventory of the pet store.
+  - workflowId: delete-pet-and-add-another-pet
+    summary: Deletes a pet and adds another pet to the store
     description: >-
-      lorem ipsum description of fetching inventory and placing order
+      lorem ipsum description of deleting and adding a pet
     inputs:
       $ref: '#/components/inputs/pets'
     steps:
-      - stepId: fetch-inventory
-        operationId: $sourceDescriptions.petStoreApi.getInventory
+      - stepId: confirm-pet-does-not-exist
+        description: Lookup of not existing pet
+        operationId: $sourceDescriptions.petStoreApi.getPetById
+        parameters:
+          - name: petId
+            in: path
+            value: 4711
         successCriteria:
-          - condition: $statusCode == 200
-        outputs:
-          availableCount: $response.body.available
-      - stepId: place-pet-order
-        description: Places a pet order.
-        operationId: $sourceDescriptions.petStoreApi.placeOrder
+          - condition: $statusCode == 404
+          - condition: $response.body == Pet not found
+        onFailure:
+          - name: deleteAlreadyExistingPet
+            type: goto
+            stepId: delete-existing-pet
+            criteria:
+              - condition: $statusCode == 200
+      - stepId: add-another-pet
+        description: Adds another pet
+        operationPath: '{$sourceDescriptions.petStoreApi.url}#/paths/~1pet/post'
+        parameters:
+          - name: accept
+            in: header
+            value: "application/xml"
         requestBody:
           contentType: application/json
           payload: |
             {
-              "id": 4,
-              "petId": "{$inputs.petId}",
-              "shipDate": "2024-10-13T12:02:49.892Z",
-              "status": "placed",
-              "complete": true
+              "id": null,
+              "name": "doggie",
+              "category": {
+                "id": 1,
+                "name": "Dogs"
+              },
+              "photoUrls": [
+                "string"
+              ],
+              "tags": [
+                {
+                  "id": 0,
+                  "name": "string"
+                }
+              ],
+              "status": "available"
             }
           replacements:
             - target: '$.status'
@@ -47,97 +77,125 @@ workflows:
               value: $inputs.petId
         successCriteria:
           - condition: $statusCode == 200
-          - condition: $response.body != null
-          - condition: '#/petId == 4'
+          - condition: /Pet/id = '4711'
             context: $response.body
-            type: jsonpath
-            version: draft-goessner-dispatch-jsonpath-00
-          - condition: '#/status == manipulatedByDev'
+            type: xpath
+            version: xpath-30
+          - condition: /Pet/status = 'manipulatedByDev'
             context: $response.body
-            type: jsonpath
-            version: draft-goessner-dispatch-jsonpath-00
+            type: xpath
+            version: xpath-30
         outputs:
-          orderId: $response.body.id
-          orderStatus: $response.body.status
-      - stepId: lookup-placed-order
-        description: Lookup of the previously placed pet order.
-        operationPath: '{$sourceDescriptions.petStoreApi.url}#/paths/~1store~1order~1{orderId}/get'
+          addedPet: $response.body
+      - stepId: confirm-recently-added-pet-exists
+        description: Lookup of added pet
+        operationId: $sourceDescriptions.petStoreApi.getPetById
         parameters:
-          - reference: $components.parameters.orderId
-            value: '4711' # sad path
+          - name: petId
+            in: path
+            value: 4711
+          - name: accept
+            in: header
+            value: 'application/json'
         successCriteria:
-          # assertions to determine step was successful
           - condition: $statusCode == 200
-          - context: $response.body
-            condition: '#/petId == 4'
+          - condition: $response.body != null
+          - condition: $.id == 4711
+            context: $response.body
             type: jsonpath
             version: draft-goessner-dispatch-jsonpath-00
-#        onSuccess:
-#          - name: leaveWorkflow2
-#            type: end
-#            criteria:
-#              # assertions to determine if this action should be executed
-#              - condition: $response.body != null
-#              - condition: '#/petId == 4'
-#                context: $response.body
-#                type: jsonpath
-#                version: draft-goessner-dispatch-jsonpath-00
-        onFailure:
-          - name: retryRetrievePlacedOrderByIdSixTimes
-            type: retry
-            retryAfter: 5 # seconds
-            retryLimit: 6
-            criteria:
-              # assertions to determine if this action should be executed
-              - condition: $statusCode == 404
-      - stepId: delete-placed-order
-        description: Deletion of the previously placed pet order.
-        operationPath: '{$sourceDescriptions.petStoreApi.url}#/paths/~1store~1order~1{orderId}/delete'
-        parameters:
-          - reference: $components.parameters.orderId
-        successCriteria:
-          # assertions to determine step was successful
-          - condition: $statusCode == 200
-          - context: $response.body
-            condition: '#/message == 4'
+          - condition: $.status == manipulatedByDev
+            context: $response.body
             type: jsonpath
             version: draft-goessner-dispatch-jsonpath-00
-          - context: $response.body
-            condition: '#/code == 200'
-            type: jsonpath
-            version: draft-goessner-dispatch-jsonpath-00
-        onFailure:
-          - name: fetchInventoryAgain
-            type: goto
-            stepId: fetch-inventory
-            criteria:
-              # assertions to determine if this action should be executed
-              - condition: '#/type == unknown'
-                context: $response.body
-                type: jsonpath
-                version: draft-goessner-dispatch-jsonpath-00
-      - stepId: lookup-non-existing-order
-        description: Lookup of a non-existing pet order.
-        operationPath: '{$sourceDescriptions.petStoreApi.url}#/paths/~1store~1order~1{orderId}/get'
-        parameters:
-          - reference: $components.parameters.orderId
-        successCriteria:
-          # assertions to determine step was successful
-          - condition: $statusCode == 404
         onSuccess:
-          - name: leaveWorkflow
+          - name: endThisWorkflow
             type: end
             criteria:
-              # assertions to determine if this action should be executed
-              - condition: $response.body != null
-              - condition: '#/message == Order not found'
-                context: $response.body
-                type: jsonpath
-                version: draft-goessner-dispatch-jsonpath-00
+              - condition: $statusCode == 200
+        outputs:
+          petName: $response.body.name
+      - stepId: delete-existing-pet
+        operationId: $sourceDescriptions.petStoreApi.deletePet
+        parameters:
+          - name: api_key
+            in: header
+            value: 'demo'
+          - name: petId
+            in: path
+            value: '4711'
+        successCriteria:
+          - condition: $statusCode == 200
+        onSuccess:
+          - name: restartExecutionChain
+            type: goto
+            stepId: confirm-pet-does-not-exist
+            criteria:
+              - condition: $statusCode == 200
+        onFailure:
+          - name: retryDeletePet5Times
+            type: retry
+            retryAfter: 5 # seconds
+            retryLimit: 5
+            criteria:
+              - condition: $statusCode == 400
     outputs:
-      petsAvailableInStore: $steps.fetch-inventory.outputs.availableCount
-      placedOrderId: $steps.place-pet-order.outputs.orderId
-      placedOrderStatus: $steps.place-pet-order.outputs.orderStatus
+      addedPet: $steps.add-another-pet.outputs.addedPet
+
+  - workflowId: update-pet-with-image-and-find-afterwards
+    summary: Updates pet, sets image and finds pets
+    description: >-
+      lorem ipsum description of updating a pet, setting an image and finds pets by status afterwards
+    dependsOn:
+      - delete-pet-and-add-another-pet
+    inputs:
+      $ref: '#/components/inputs/pets'
+    steps:
+      - stepId: update-pet
+        operationId: $sourceDescriptions.petStoreApi.updatePetWithForm
+        parameters:
+          - name: petId
+            in: path
+            value: $workflows.delete-pet-and-add-another-pet.outputs.addedPet.id
+          - name: name
+            in: query
+            value: hugo
+          - name: status
+            in: query
+            value: bernd
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          updatedPet: $response.body.category
+      - stepId: upload-pet-image
+        operationPath: '{$sourceDescriptions.petStoreApi.url}#/paths/~1pet~1{petId}~1uploadImage/post'
+        parameters:
+          - name: petId
+            in: path
+            value: '10'
+          - name: additionalMetadata
+            in: query
+            value: "Some metadata"
+        requestBody:
+          contentType: application/octet-stream
+# inside docker with referenced file
+#          payload: /itarazzo/resources/image.png
+          payload: src/test/resources/image.png
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          petImage: $response.body.photoUrls
+      - stepId: find-pet-by-status
+        operationPath: '{$sourceDescriptions.petStoreApi.url}#/paths/~1pet~1findByStatus/get'
+        parameters:
+          - name: status
+            in: query
+            value: available
+        successCriteria:
+          - condition: $statusCode == 200
+    outputs:
+      updatedPet: $steps.update-pet.outputs.updatedPet
+      updatedPetImage: $steps.upload-pet-image.outputs.petImage
 components:
   inputs:
     pets:
@@ -145,8 +203,3 @@ components:
       properties:
         petId:
           type: number
-  parameters:
-    orderId:
-      name: orderId
-      in: path
-      value: $steps.place-pet-order.outputs.orderId

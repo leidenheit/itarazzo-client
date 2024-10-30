@@ -6,7 +6,7 @@
 
     <groupId>de.leidenheit</groupId>
     <artifactId>itarazzo-client</artifactId>
-    <version>0.0.1</version>
+    <version>0.1.0</version>
     <name>Itarazzo Client</name>
     <description>Client implementation with utilizes Itarazzo library in order to execute an arazzo specification
     </description>
@@ -23,8 +23,8 @@
         <dependency>
             <groupId>de.leidenheit</groupId>
             <artifactId>itarazzo-library</artifactId>
-            <version>0.0.1</version>
-            <scope>test</scope>
+            <version>0.1.0</version>
+            <scope>compile</scope>
         </dependency>
 
         <!-- Junit 5 -->
@@ -44,7 +44,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.34</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- Logback as the logging implementation -->

@@ -4,9 +4,9 @@ services:
       context: .
     stop_grace_period: 90s
     environment:
-      - ARAZZO_FILE=/itarazzo/specs/pet-store.arazzo.yaml
-      - ARAZZO_INPUTS_FILE=/itarazzo/specs/arazzo-inputs.json
+      - ARAZZO_FILE=/itarazzo/resources/pet-store.arazzo.yaml
+      - ARAZZO_INPUTS_FILE=/itarazzo/resources/arazzo-inputs.json
     volumes:
-      - ./src/test/resources:/itarazzo/specs
+      - ./src/test/resources:/itarazzo/resources
       - ./target/reports:/itarazzo/target/reports
       - ~/.m2:/home/itarazzobot/.m2 #used to reference dependencies available only locally

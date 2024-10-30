@@ -2,7 +2,7 @@ FROM maven:3.8.1-openjdk-17-slim
 
 # meta
 LABEL maintainer="leidenheit <X: @leidenheit>"
-LABEL version="0.0.1"
+LABEL version="0.1.0"
 LABEL description="Itarazzo Client for running workflow tests based on the Arazzo Specification"
 LABEL license="Apache-2.0"
 
@@ -16,8 +16,8 @@ RUN chown itarazzobot:runners /itarazzo
 # create sub directories in order to prevent permission issues
 RUN mkdir -p /itarazzo/target
 RUN chown itarazzobot:runners /itarazzo/target
-RUN mkdir -p /itarazzo/specs
-RUN chown itarazzobot:runners /itarazzo/specs
+RUN mkdir -p /itarazzo/resources
+RUN chown itarazzobot:runners /itarazzo/resources
 
 # copy sources
 COPY --chown=itarazzobot:runners . .
