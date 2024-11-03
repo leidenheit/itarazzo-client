@@ -172,7 +172,7 @@ workflows:
         parameters:
           - name: petId
             in: path
-            value: '10'
+            value: $inputs.petId
           - name: additionalMetadata
             in: query
             value: "Some metadata"
