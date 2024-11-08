@@ -48,7 +48,8 @@ workflows:
         parameters:
           - name: accept
             in: header
-            value: "application/xml"
+#            value: "application/xml"
+            value: "application/json"
         requestBody:
           contentType: application/json
           payload: |
@@ -77,16 +78,22 @@ workflows:
               value: $inputs.petId
         successCriteria:
           - condition: $statusCode == 200
-          - condition: /Pet/id = '4711'
-            context: $response.body
-            type: xpath
-            version: xpath-30
-          - condition: /Pet/status = 'manipulatedByDev'
-            context: $response.body
-            type: xpath
-            version: xpath-30
+          - condition: $.name == Dogs
+            context: $response.body.category
+            type: jsonpath
+            version: draft-goessner-dispatch-jsonpath-00
+#          - condition: /Pet/id = '4711'
+#            context: $response.body
+#            type: xpath
+#            version: xpath-30
+#          - condition: /Pet/status = 'manipulatedByDev'
+#            context: $response.body
+#            type: xpath
+#            version: xpath-30
         outputs:
-          addedPet: $response.body
+#          addedPetId: $response.body.id #json path
+          addedPetId: $response.body#/id #json pointer
+#          addedPetId: $response.body.Pet.id #xml
       - stepId: confirm-recently-added-pet-exists
         description: Lookup of added pet
         operationId: $sourceDescriptions.petStoreApi.getPetById
@@ -140,7 +147,7 @@ workflows:
             criteria:
               - condition: $statusCode == 400
     outputs:
-      addedPet: $steps.add-another-pet.outputs.addedPet
+      addedPetId: $steps.add-another-pet.outputs.addedPetId
 
   - workflowId: update-pet-with-image-and-find-afterwards
     summary: Updates pet, sets image and finds pets
@@ -156,7 +163,7 @@ workflows:
         parameters:
           - name: petId
             in: path
-            value: $workflows.delete-pet-and-add-another-pet.outputs.addedPet.id
+            value: $workflows.delete-pet-and-add-another-pet.outputs.addedPetId
           - name: name
             in: query
             value: hugo
