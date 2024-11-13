@@ -1,7 +1,6 @@
 services:
-  itarazzo:
-    build:
-      context: .
+  itarazzo-client:
+    image: leidenheit/itarazzo-client:latest
     stop_grace_period: 90s
     environment:
       - ARAZZO_FILE=/itarazzo/resources/pet-store.arazzo.yaml
@@ -9,4 +8,3 @@ services:
     volumes:
       - ./src/test/resources:/itarazzo/resources
       - ./target/reports:/itarazzo/target/reports
-      - ~/.m2:/home/itarazzobot/.m2 #used to reference dependencies available only locally

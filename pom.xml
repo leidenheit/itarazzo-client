@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>de.leidenheit</groupId>
+    <groupId>io.github.leidenheit</groupId>
     <artifactId>itarazzo-client</artifactId>
-    <version>0.1.0</version>
-    <name>Itarazzo Client</name>
-    <description>Client implementation with utilizes Itarazzo library in order to execute an arazzo specification
-    </description>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
+
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>A client which utilizes the Itarazzo Library in order to execute an arazzo specification</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -21,8 +21,8 @@
     <dependencies>
         <!-- Itarazzo Library -->
         <dependency>
-            <groupId>de.leidenheit</groupId>
-            <artifactId>itarazzo-library</artifactId>
+            <groupId>io.github.leidenheit</groupId>
+            <artifactId>itarazzo</artifactId>
             <version>0.1.0</version>
             <scope>compile</scope>
         </dependency>

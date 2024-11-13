@@ -5,8 +5,8 @@ import de.leidenheit.infrastructure.io.InputsReader;
 import de.leidenheit.integration.ItarazzoDynamicTest;
 import de.leidenheit.integration.extension.ItarazzoExtension;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 

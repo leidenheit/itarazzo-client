@@ -1,15 +1,21 @@
 #!/bin/sh
 
-echo "Itarazzo Client"
 echo "==============="
+echo "Itarazzo Client"
 echo "#####################################################################"
 echo "### WARNING: ACTUAL REQUESTS WILL BE MADE - TAKE CARE OF SECURITY ###"
 echo "#####################################################################"
-echo "Using arazzo specification located at: $ARAZZO_FILE"
-echo "Using inputs located at: $ARAZZO_INPUTS_FILE"
 
-mvn verify -Darazzo.file="$ARAZZO_FILE" -Darazzo-inputs.file="$ARAZZO_INPUTS_FILE"
+if [ -z "$ARAZZO_FILE" ] || [ -z "$ARAZZO_INPUTS_FILE" ]; then
+    echo "Error: Environment variables ARAZZO_FILE and/or ARAZZO_INPUTS_FILE are not set."
+    exit 1
+fi
+
+echo "Execution will be started."
+mvn verify -q -B -Darazzo.file="$ARAZZO_FILE" -Darazzo-inputs.file="$ARAZZO_INPUTS_FILE"
 
 # force report generation in any case
-echo "Generating reports..."
-mvn failsafe:verify
+echo "Reports will be generated."
+mvn failsafe:verify -q -B
+
+echo "==============="
