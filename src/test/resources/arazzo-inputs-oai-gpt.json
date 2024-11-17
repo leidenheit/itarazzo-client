@@ -1,0 +1,8 @@
+{
+  "petDetails": {
+	  "id": 10,
+	  "name": "petHugo",
+	  "status": "available"
+  },
+  "petStatus": "available"
+}

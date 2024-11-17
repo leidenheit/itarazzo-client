@@ -1,0 +1,98 @@
+arazzo: 1.0.0
+info:
+  title: Comprehensive Petstore Workflow
+  version: 1.0.0
+  description: >
+    This Arazzo Specification defines workflows to perform operations across the
+    Petstore API. It integrates features like pet management, user actions, and
+    order placements to showcase interaction across domains.
+sourceDescriptions:
+  - name: petstore
+    url: https://petstore3.swagger.io/api/v3/openapi.json
+    type: openapi
+workflows:
+  - workflowId: add-update-pet
+    summary: Add and update pet details
+    description: >
+      Adds a new pet to the store and updates its details afterward.
+    inputs:
+      type: object
+      properties:
+        petDetails:
+          type: object
+          description: Details of the pet to be added or updated
+          properties:
+            id:
+              type: number
+            name:
+              type: string
+            status:
+              type: string
+    steps:
+      - stepId: add-pet
+        description: Add a new pet to the store
+        operationId: addPet
+        requestBody:
+          contentType: application/json
+          payload: |
+            {
+              "id": "{$inputs.petDetails.id}",
+              "name": "petHugo",
+              "status": "available"
+            }
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          petId: $response.body#/id
+      - stepId: update-pet
+        description: Update the pet details
+        operationId: updatePet
+        requestBody:
+          contentType: application/json
+          payload: $inputs.petDetails
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          petId: $response.body#/id
+    outputs:
+      updatedPetId: $steps.update-pet.outputs.petId
+
+  - workflowId: place-order
+    summary: Place an order for a pet
+    description: >
+      Finds an available pet and places an order for it.
+    inputs:
+      type: object
+      properties:
+        petStatus:
+          type: string
+          description: Status of the pet to find
+    steps:
+      - stepId: find-pets
+        description: Find pets by status
+        operationId: findPetsByStatus
+        parameters:
+          - name: status
+            in: query
+            value: $inputs.petStatus
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          petId: $response.body#/0/id
+          petTagId: $response.body[0].tags[0].id
+      - stepId: order-pet
+        description: Place an order for the found pet
+        operationId: placeOrder
+        requestBody:
+          contentType: application/json
+          payload:
+            petId: $steps.find-pets.outputs.petId
+            quantity: 1
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          orderId: $response.body#/id
+    outputs:
+      orderId: $steps.order-pet.outputs.orderId
+      tagId: $steps.find-pets.outputs.petTagId
+
