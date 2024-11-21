@@ -17,5 +17,3 @@ mvn verify -q -B -Darazzo.file="$ARAZZO_FILE" -Darazzo-inputs.file="$ARAZZO_INPU
 # force report generation in any case
 echo "Reports will be generated."
 mvn failsafe:verify -q -B
-
-echo "==============="
