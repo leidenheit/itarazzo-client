@@ -1,10 +1,9 @@
-# Dockerfile to build and run the Itarazzo Client script
+# Dockerfile to build and run the Itarazzo Client
 
 FROM maven:3.8.1-openjdk-17-slim
 
 # meta
 LABEL maintainer="leidenheit <X: @leidenheit>"
-LABEL version="0.1.0"
 LABEL description="Itarazzo Client for running workflow tests based on Arazzo Specifications"
 LABEL license="Apache-2.0"
 

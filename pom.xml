@@ -6,11 +6,12 @@
 
     <groupId>io.github.leidenheit</groupId>
     <artifactId>itarazzo-client</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>A client which utilizes the Itarazzo Library in order to execute an arazzo specification</description>
+    <description>A client which utilizes the Itarazzo library in order to execute an arazzo specification.</description>
+    <url>https://github.com/leidenheit/itarazzo-library</url>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

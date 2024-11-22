@@ -1,6 +1,8 @@
 services:
   itarazzo-client:
-    image: leidenheit/itarazzo-client:latest
+    # image: leidenheit/itarazzo-client:latest
+    build:
+      context: .
     stop_grace_period: 90s
     environment:
       - ARAZZO_FILE=/itarazzo/resources/pet-store.arazzo.yaml
